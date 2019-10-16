@@ -20,6 +20,9 @@ var alpha = 1 - math.Exp(-1.0)
 // The global sweeper.
 var globalSweeper sweeper
 
+// We tick every second.
+var ewmaRate = time.Second
+
 type sweeper struct {
 	sweepOnce       sync.Once
 	meters          []*Meter
@@ -48,7 +51,7 @@ func (sw *sweeper) register(m *Meter) {
 }
 
 func (sw *sweeper) runActive() {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(ewmaRate)
 	defer ticker.Stop()
 
 	sw.lastUpdateTime = time.Now()
@@ -77,11 +80,11 @@ func (sw *sweeper) update() {
 
 	now := time.Now()
 	tdiff := now.Sub(sw.lastUpdateTime)
-	if tdiff <= 0 {
+	if tdiff <= ewmaRate/10 {
 		return
 	}
 	sw.lastUpdateTime = now
-	timeMultiplier := float64(time.Second) / float64(tdiff)
+	timeMultiplier := float64(ewmaRate) / float64(tdiff)
 
 	newLen := len(sw.meters)
 
